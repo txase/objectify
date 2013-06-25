@@ -11,11 +11,11 @@ MetaClass.prototype.create = function() {
  * Class declaration function
  */
 function Class(super_, definition) {
-  if (typeof super_ !== 'function') {
+  if (!super_)
+    super_ = MetaClass;
+  else if (typeof super_ !== 'function') {
     if (typeof super_.constructor === 'function')
       super_ = super_.constructor;
-    else if (!super_)
-      super_ = MetaClass;
     else
       throw new Error('Bad super class');
   }
