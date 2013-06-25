@@ -23,8 +23,8 @@ function Class(super_, definition) {
   definition = definition ? definition() : {};
   function class_() {
     super_.call(this);
-    if (definition.constructor)
-      definition.constructor.call(this, this.constructor_.prototype);
+    if (definition.instantiator)
+      definition.instantiator.call(this, this.constructor_.prototype);
   }
 
   util.inherits(class_, super_);
@@ -54,7 +54,7 @@ var MyClass = Class(null, function() {
       class_.prototype.publicStaticVar = 'public static variable';
     },
 
-    constructor: function(proto) {
+    instantiator: function(proto) {
       var privateInstanceVar = 'private instance variable';
       var privateInstanceMethod = function() {
         console.log('private instance method');
@@ -74,7 +74,7 @@ var MyObject = MyClass.create();
 
 var MyClass2 = Class(MyClass, function() {
   return {
-    constructor: function(proto) {
+    instantiator: function(proto) {
       proto.publicInstanceVar = 'Overridden instance variable';
     }
   };
