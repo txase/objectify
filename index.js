@@ -4,7 +4,9 @@ function MetaClass() {
   this.constructor_ = function() {};
 };
 MetaClass.prototype.create = function() {
-  return new this.constructor_(Array.prototype.slice(arguments));
+  var obj = new this.constructor_(Array.prototype.slice(arguments));
+  obj.class = this;
+  return obj;
 };
 
 /**
@@ -23,14 +25,21 @@ function Class(super_, definition) {
   definition = definition ? definition() : {};
   function class_() {
     super_.call(this);
-    if (definition.instantiator)
-      definition.instantiator.call(this, this.constructor_.prototype);
+
+    function constructor_() {};
+    util.inherits(constructor_, this.constructor_);
+    constructor_.prototype.super_ = this.constructor_.prototype;
+    this.constructor_ = constructor_;
+
+    if (definition.instance)
+      definition.instance.call(this.constructor_.prototype);
   }
 
   util.inherits(class_, super_);
+  class_.prototype.super_ = super_.prototype;
 
-  if (definition.prototype)
-    definition.prototype(class_);
+  if (definition.static)
+    definition.static.call(class_.prototype);
 
   return new class_();
 }
@@ -38,30 +47,30 @@ function Class(super_, definition) {
 ///////////////////////////////////////////////////////////////////////////////
 
 var MyClass = Class(null, function() {
-  var privateStaticVar = 'private static variable';
+  var privateClassVar = 'private static variable';
 
-  function privateStaticMethod() {
+  function privateClassMethod() {
     console.log('private static class method called');
   };
 
   return {
-    prototype: function(class_) {
-      class_.prototype.publicStaticMethod = function() {
+    static: function() {
+      this.publicClassMethod = function() {
         console.log('public static class method called');
-        privateStaticMethod();
+        privateClassMethod();
       };
 
-      class_.prototype.publicStaticVar = 'public static variable';
+      this.publicClassVar = 'public static variable';
     },
 
-    instantiator: function(proto) {
+    instance: function() {
       var privateInstanceVar = 'private instance variable';
       var privateInstanceMethod = function() {
         console.log('private instance method');
       };
 
-      proto.publicInstanceVar = 'public static variable';
-      proto.publicInstanceMethod = function() {
+      this.publicInstanceVar = 'public static variable';
+      this.publicInstanceMethod = function() {
         console.log('Private instance variable: ' + privateInstanceVar);
         console.log('Private instance method: ' + privateInstanceMethod());
         console.log('public instance method called');
@@ -74,13 +83,23 @@ var MyObject = MyClass.create();
 
 var MyClass2 = Class(MyClass, function() {
   return {
-    instantiator: function(proto) {
-      proto.publicInstanceVar = 'Overridden instance variable';
+    instance: function(proto) {
+      this.publicInstanceVar = 'Overridden instance variable';
     }
   };
 });
 
 var MyObject2 = MyClass2.create();
+
+var MyClass3 = Class(MyClass2, function() {
+  return {
+    instance: function(proto) {
+      this.publicInstanceVar = 'Overridden twice instance variable';
+    }
+  };
+});
+
+var MyObject3 = MyClass3.create();
 
 /*
 // Namespace declaration
@@ -124,4 +143,4 @@ global.MyClass2 = Class(MyNamespace.MyClass, null, function(arg) {
 
 myObject2 = new MyClass2();
 */
-console.log('done!');
+console.log(MyObject3.super_().super_().publicInstanceVar);
